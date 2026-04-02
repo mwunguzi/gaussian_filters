@@ -39,6 +39,44 @@ extended_kalman_filter::extended_kalman_filter(Eigen::VectorXf state_vector, Eig
  * predicted_mean = g(x_t-1,u_t)
  * predicted_cov  = G_t * prev_cov * G_t.transpose() + R_t
  *
+ * -----------------------------------------------------------------------------------------------------
+ * @param [in]  control_vector u_t.
+ * @param [in]  sensor_measurement_vector z_t, new measurement from the sensor.
+ * @param [out] predicted states' belief mean and covariance. 
+ */
+std::pair<Eigen::VectorXf, Eigen::VectorXf>
+extended_kalman_filter::predict_state(Eigen::MatrixXf control_vector,
+										      Eigen::MatrixXf sensor_measurement_vector)
+{
+	Eigen::VectorXf pred_mean;
+	Eigen::VectorXf pred_cov;
+
+	std::pair<Eigen::VectorXf, Eigen::VectorXf> pred_states;
+
+	pred_mean = calculate_ekf_predicted_mean(control_vector);
+	pred_cov  = calculate_ekf_predicted_covariance(control_vector);
+
+	pred_states.first  = pred_mean;
+	pred_states.second = pred_cov;
+
+	//update the previous belief 
+	m_predicted_mean = pred_mean;
+	m_predicted_covariance  = pred_cov;
+
+	return pred_states;
+
+}
+
+
+/**
+ * @brief Function member to computer extended Kalman filter's corrected state
+ * 
+ * @details
+ * This function uses Kalman filter's algorithm to compute the corrected state of a system.
+ *
+ * -----------------------------------------------------------------------------------------------------
+ * Algorithm used: source(Book: Probablistic Robotics, page 42)
+ *
  * K_t            = predicted_cov * H_t.transpose() * (H_t * predicted_cov * H_t.transpose() + Q_t).inverse()
  * corrected_mean = predicted_mean + K_t * (z_t - h(predicted_mean))
  * corrected_cov  = (I - K_t * H_t) * predicted_cov 
@@ -46,26 +84,21 @@ extended_kalman_filter::extended_kalman_filter(Eigen::VectorXf state_vector, Eig
  * -----------------------------------------------------------------------------------------------------
  * @param [in]  control_vector u_t.
  * @param [in]  sensor_measurement_vector z_t, new measurement from the sensor.
- * @param [out] posterior belief mean and covariance. 
+ * @param [out] Updated States' belief mean and covariance. 
  */
 std::pair<Eigen::VectorXf, Eigen::VectorXf>
-extended_kalman_filter::compute_ekf_corrected_state(Eigen::MatrixXf control_vector,
+extended_kalman_filter::update_state(Eigen::MatrixXf control_vector,
 										      Eigen::MatrixXf sensor_measurement_vector)
 {
-	Eigen::VectorXf pred_mean;
-	Eigen::VectorXf pred_cov;
 	Eigen::MatrixXf K_t;
 	Eigen::VectorXf corr_mean;
 	Eigen::VectorXf corr_cov;
 
 	std::pair<Eigen::VectorXf, Eigen::VectorXf> corr_states;
 
-	pred_mean = calculate_ekf_predicted_mean(control_vector);
-	pred_cov  = calculate_ekf_predicted_covariance(control_vector);
-
-	K_t       = calculate_ekf_kalman_gain(pred_mean, pred_cov);
-	corr_mean = calculate_ekf_corrected_mean(pred_mean, K_t, sensor_measurement_vector);
-	corr_cov  = calculate_ekf_corrected_covariance(pred_mean, pred_cov, K_t);
+	K_t       = calculate_ekf_kalman_gain(m_predicted_mean, m_predicted_covariance);
+	corr_mean = calculate_ekf_corrected_mean(m_predicted_mean, K_t, sensor_measurement_vector);
+	corr_cov  = calculate_ekf_corrected_covariance(m_predicted_mean, m_predicted_covariance, K_t);
 
 	corr_states.first  = corr_mean;
 	corr_states.second = corr_cov;

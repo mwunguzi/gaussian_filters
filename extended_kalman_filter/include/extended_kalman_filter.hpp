@@ -55,14 +55,26 @@ public:
 
 
 	/**
-	 * @brief Function member to computer Kalman filter's corrected state
+	 * @brief Function member to predict the next state
 	 *
 	 * @param [in]  control_vector u_t.
 	 * @param [in]  sensor_measurement_vector z_t, new measurement from the sensor.
-	 * @param [out] posterior belief mean and covariance. 
+	 * @param [out] predicted belief mean and covariance. 
 	 */
 	std::pair<Eigen::VectorXf, Eigen::VectorXf> 
-    compute_ekf_corrected_state(Eigen::MatrixXf control_vector, Eigen::MatrixXf sensor_measurement_vector);
+    predict_state(Eigen::MatrixXf control_vector, Eigen::MatrixXf sensor_measurement_vector);
+
+
+	/**
+	 * @brief Function member to predict the next state
+	 *
+	 * @param [in]  control_vector u_t.
+	 * @param [in]  sensor_measurement_vector z_t, new measurement from the sensor.
+	 * @param [out] updated belief mean and covariance. 
+	 */
+	std::pair<Eigen::VectorXf, Eigen::VectorXf> 
+    update_state(Eigen::MatrixXf control_vector, Eigen::MatrixXf sensor_measurement_vector);
+
 
 
 	/**
@@ -93,6 +105,8 @@ private:
 	Eigen::VectorXf m_measurement_noise_cov_vector; //Q_t
 	Eigen::VectorXf m_previous_belief_mean;
 	Eigen::VectorXf m_previous_belief_covariance;
+	Eigen::VectorXf m_predicted_mean;
+	Eigen::VectorXf m_predicted_covariance;
 	std::function<Eigen::VectorXf(const Eigen::VectorXf&)> m_h; // h(x_t)
 	std::function<Eigen::MatrixXf(const Eigen::VectorXf&)> m_H; // H, jacobian matrix
 	std::function<Eigen::VectorXf(const Eigen::VectorXf&, const Eigen::VectorXf&)> m_g; // g(x_t-1,u_t)
